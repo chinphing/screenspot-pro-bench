@@ -48,8 +48,8 @@ def main() -> int:
         if not keys:
             continue
         lines += [f"## {split}", "",
-                  "| 基线 | 后端 | 模型 | 描述版本 | 命中 | ERROR | 单次 | 调用 | 到中心 | 距边 | 擦边 | 失败距离 | 判读 | 文件数 |",
-                  "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                  "| 基线 | 后端 | 模型 | 描述版本 | 命中 | ERROR | 单次 | 调用 | 到中心 | 距边 | 擦边 | 宏观包裹 | 微观覆盖 | 失败距离 | 判读 | 文件数 |",
+                  "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for base, backend, _, ver, mdl in keys:
             rows = M.load(str(raw / f"{base}_{backend}_{split}_{ver}_{mdl}*.jsonl"))
             m = M.evaluate(rows)
@@ -57,6 +57,9 @@ def main() -> int:
                 continue
             ev = (m["edge_med"] - M.BASE_EDGE_MED) / M.BASE_EDGE_MED * 100
             mv = (m["marginal"] - M.BASE_MARGINAL) / M.BASE_MARGINAL * 100
+            mac = f"{m['macro']*100:.1f}%" if m.get("macro") is not None else "—"
+            mic = (f"{m['micro']*100:.1f}% ({m['micro_med']*100:.1f}%)"
+                   if m.get("micro") is not None else "—")
             lines.append(
                 f"| `{base}` | {backend} | `{mdl}` | `{ver}` "
                 f"| **{m['rate']*100:.0f}%** ({m['hit']}/{m['n']}) "
@@ -64,6 +67,7 @@ def main() -> int:
                 f"| {m['d_center']:.0f}px ({m['d_rel']*100:.0f}%) "
                 f"| {m['edge_med']*100:.0f}% ({ev:+.0f}%) "
                 f"| {m['marginal']*100:.0f}% ({mv:+.0f}%) "
+                f"| {mac} | {mic} "
                 f"| {m['miss_med']:.0f}px | {M.verdict(m['edge_med'], m['marginal'])} "
                 f"| {len(groups[(base, backend, split, ver, mdl)])} |")
         lines.append("")

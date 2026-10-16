@@ -94,6 +94,41 @@ def is_hit(r: dict, fc) -> bool:
     return bool(fc and gb and gb[0] <= fc[0] <= gb[2] and gb[1] <= fc[1] <= gb[3])
 
 
+def final_box(r: dict):
+    """最终报出的那个【框】，统一还原成原图像素坐标。
+
+    ⚠️ 两条来源、坐标系不同，必须分别处理：
+      · B1 走 bench/runner.py，直接写 final_bbox（已是原图像素）
+      · B2/B3 是从 legacy 逐字拷贝的，只有 trace；框在最后一个 move 的
+        bbox_orig 里——**名字叫 orig，实际是归一化 0-1000**，要按图尺寸还原。
+    """
+    if r.get("final_bbox"):
+        return [float(v) for v in r["final_bbox"]]
+    for t in reversed(r.get("trace") or []):
+        if t.get("action") == "move" and t.get("bbox_orig"):
+            b = t["bbox_orig"]
+            sz = r.get("gt_img_size") or r.get("img_size")
+            if not sz:
+                return None
+            W, H = sz
+            return [b[0] / 1000 * W, b[1] / 1000 * H, b[2] / 1000 * W, b[3] / 1000 * H]
+    return None
+
+
+def box_cover(pred, gt) -> tuple[int, float]:
+    """框的包裹程度（口径见 docs/ARCHIVE4.md 第 19 节）。
+
+    宏观 macro：预测框【完整包住】真值框 → 1，否则 0   （完整包裹率）
+    微观 micro：min(1, 交集面积 / 真值面积)              （平均覆盖率）
+    """
+    inter = (max(0.0, min(pred[2], gt[2]) - max(pred[0], gt[0]))
+             * max(0.0, min(pred[3], gt[3]) - max(pred[1], gt[1])))
+    garea = max(0.0, gt[2] - gt[0]) * max(0.0, gt[3] - gt[1])
+    macro = 1 if (pred[0] <= gt[0] and pred[1] <= gt[1]
+                  and pred[2] >= gt[2] and pred[3] >= gt[3]) else 0
+    return macro, (min(1.0, inter / garea) if garea > 0 else 0.0)
+
+
 def evaluate(rows: list[dict]) -> dict:
     ok = [r for r in rows if r.get("status") != "ERROR"]
     errs = [r for r in rows if r.get("status") == "ERROR"]
@@ -114,6 +149,18 @@ def evaluate(rows: list[dict]) -> dict:
         d_rel.append(d / length if length else 0.0)
         e = min(fc[0] - gb[0], gb[2] - fc[0], fc[1] - gb[1], gb[3] - fc[1])
         edge_frac.append(e / half if half else 0.0)
+
+    # 宏微观覆盖率：与落点独立的一遍，纯几何
+    macro, micro = [], []
+    for r in ok:
+        gb = r.get("gt_bbox")
+        pb = final_box(r)
+        if not gb or not pb:
+            continue
+        m, u = box_cover(pb, gb)
+        macro.append(m)
+        micro.append(u)
+
     lat = [r["latency_s"] for r in ok if "latency_s" in r]
     calls = []
     for r in ok:
@@ -131,6 +178,10 @@ def evaluate(rows: list[dict]) -> dict:
         "marginal": (sum(1 for x in edge_frac if x < 0.25) / len(edge_frac)) if edge_frac else None,
         "miss_med": statistics.median(miss) if miss else None,
         "miss_n": len(miss),
+        "macro": (sum(macro) / len(macro)) if macro else None,
+        "micro": statistics.mean(micro) if micro else None,
+        "micro_med": statistics.median(micro) if micro else None,
+        "box_n": len(macro),
         "lat": statistics.mean(lat) if lat else None,
         "lat_med": statistics.median(lat) if lat else None,
         "calls": statistics.mean(calls) if calls else None,
@@ -158,6 +209,10 @@ def format_line(label: str, m: dict) -> str:
            f"到中心 {m['d_center']:>4.0f}px({m['d_rel']*100:>3.0f}%) P75 {m['d_p75']:>4.0f}px   "
            f"距边 {edge*100:>3.0f}%({ev:>+3.0f}%)  擦边 {marg*100:>3.0f}%({mv:>+3.0f}%)  "
            f"{verdict(edge, marg)}")
+    if m.get("macro") is not None:
+        out += (f"\n  {'':<24}   ↳ 框：宏观完整包裹 {m['macro']*100:>4.1f}%   "
+                f"微观平均覆盖 {m['micro']*100:>4.1f}% (中位 {m['micro_med']*100:>4.1f}%)"
+                f"   n={m['box_n']}")
     if m["miss_med"] is not None:
         out += f"\n  {'':<24}   ↳ 失败 {m['miss_n']} 条，离中心中位 {m['miss_med']:.0f}px"
     return out
