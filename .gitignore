@@ -14,9 +14,10 @@ legacy/*
 !legacy/*.txt
 
 # ── 基线成绩 ──
-#   汇总表 baselines/RESULTS.md 要提交（成绩的可读入口）
+#   汇总表 baselines/RESULTS.md 与结果目录说明 baselines/results/README.md 要提交
 #   原始逐条结果体积大且可重跑，不进库
-baselines/results/
+baselines/results/*
+!baselines/results/README.md
 
 # Python
 __pycache__/
