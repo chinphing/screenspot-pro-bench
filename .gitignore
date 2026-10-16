@@ -1,0 +1,31 @@
+# ── 数据 ──
+#   data/ = 上游 ScreenSpot-Pro 的标注 + 全量图片（3.3GB）
+#           换机器跑 scripts/download_data.py 即可全部取回（标注 + 图片）
+data/
+
+# ── 旧实验 ──
+#   legacy/ = 归一化之前的实验脚本与旧结果
+#   ⚠️ 脚本（.py/.sh/.txt，约 940K）必须入库：baselines/ 是它们的逐字拷贝，
+#      "基线是原样拷贝"这个论断靠 diff legacy/... baselines/... 复核
+#   旧结果（results_l1 236M / results_loop 342M 等）体积大，不进库
+legacy/*
+!legacy/*.py
+!legacy/*.sh
+!legacy/*.txt
+
+# ── 基线成绩 ──
+#   汇总表 baselines/RESULTS.md 要提交（成绩的可读入口）
+#   原始逐条结果体积大且可重跑，不进库
+baselines/results/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器/系统
+.DS_Store
+.idea/
+.vscode/
+*.swp

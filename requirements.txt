@@ -1,0 +1,2 @@
+# ScreenSpot-Pro 定位 benchmark —— 运行依赖
+Pillow>=10.0

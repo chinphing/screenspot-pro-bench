@@ -1,0 +1,17 @@
+{
+  "version": "v2",
+  "generated_at": "PENDING",
+  "generator": "scripts/gen_descriptions.py（重构后的规范化脚本，支持并发）",
+  "model": "qwen3.8-flash",
+  "backend": "qwen",
+  "workers": 8,
+  "anchor_verify": false,
+  "splits": {
+    "M1": 20,
+    "M2": 300,
+    "M3": 1261
+  },
+  "note": "全量重新生成版。三个集合（M1/M2/M3）来自同一次生成，口径一致——这是 V1 做不到的（V1 只有 M1）。所有正式成绩都应以本版为准。",
+  "why_regenerate": "2026-10-16 复测发现模型别名 qwen3.8-flash 的后端快照已漂移：用原始脚本重跑同样样例无法复现 V1 的内容（如 powerpoint_windows_56 的『红色』变成『白色』）。因此 V1 无法再为 M2/M3 补齐，只能重新生成一整版 V2。",
+  "caveat": "V2 与 V1 的描述内容不同 ⇒ 两者的基线成绩不可直接比较，必须用同一版描述横向对比。生成完成时本文件会自动回填 generated_at 与实际条数。"
+}

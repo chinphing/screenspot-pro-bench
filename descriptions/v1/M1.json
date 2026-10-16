@@ -1,0 +1,182 @@
+{
+ "powerpoint_windows_56": {
+  "feat": "红色向右弯曲的箭头符号，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "撤销按钮右侧紧邻的图标",
+  "env_raw": "撤销按钮右侧紧邻的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "origin_windows_1": {
+  "feat": "白色矩形，内含三条蓝色水平横线。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【上部】",
+  "env": "网格图标右边第一个图标",
+  "env_raw": "网格图标右边第一个图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vscode_macos_45": {
+  "feat": "一个深红色底的正方形，中间有一个白色的X符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【上部】",
+  "env": "testing_utils.py 标签文字右端的关闭按钮",
+  "env_raw": "testing_utils.py 标签文字右端的关闭按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "matlab_macos_64": {
+  "feat": "白色长方形下拉框，右侧带黑色向下箭头，框内无文字",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中右】、垂直【正中部】",
+  "env": "LineWidth 0.5 输入框正上方的下拉框",
+  "env_raw": "LineWidth 0.5 输入框正上方的下拉框",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "pycharm_macos_1": {
+  "feat": "白色圆角矩形边框，内含符号>_，无文字",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【正中部】",
+  "env": "带播放三角的六边形图标正下方那个圆角矩形图标",
+  "env_raw": "带播放三角的六边形图标正下方那个圆角矩形图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "linux_common_linux_42": {
+  "feat": "深灰色圆角方形底色，上面有白色的铅笔和横线符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Utilities文字右端的编辑图标",
+  "env_raw": "Utilities文字右端的编辑图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "solidworks_windows_73": {
+  "feat": "浅灰色正方形，内有一条两端带小圆圈的深色对角线，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "智能尺寸图标右边第一个按钮",
+  "env_raw": "智能尺寸图标右边第一个按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "android_studio_macos_69": {
+  "feat": "白色线条勾勒的类似面具或口袋形状图标，深灰底色，无文字",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【上部】",
+  "env": "齿轮设置图标右侧紧邻的图标",
+  "env_raw": "齿轮设置图标右侧紧邻的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "fruitloops_windows_50": {
+  "feat": "指向右侧的浅灰色立体三角形播放符号，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Studio PROG 列表右端的图标",
+  "env_raw": "Studio PROG 列表右端的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "autocad_windows_10": {
+  "feat": "浅灰色带箭头线段和圆圈，圆圈内有数字“1”，下方有文字“引出序号”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "标注菜单下方的引出序号按钮",
+  "env_raw": "标注菜单下方的引出序号按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "premiere_windows_27": {
+  "feat": "深红色矩形背景，白色文字“Close Panel",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "Undock Panel 文字正上方的菜单项",
+  "env_raw": "Undock Panel 文字正上方的菜单项",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vmware_macos_14": {
+  "feat": "浅灰色矩形按钮，带细边框，上有黑色文字“Apply”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Revert按钮右端紧邻的按钮",
+  "env_raw": "Revert按钮右端紧邻的按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "windows_common_windows_48": {
+  "feat": "深色矩形，左侧蓝色Wi-Fi符号，文字为“404notfound”和“Connected, secured”",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【中上】",
+  "env": "charles 设备名右端紧邻的卡片",
+  "env_raw": "charles 设备名右端紧邻的卡片",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vivado_windows_77": {
+  "feat": "绿色实心三角形，指向右侧，无边框无底色，上面无文字或符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【中下】",
+  "env": "快退双箭头右端的绿色播放按钮",
+  "env_raw": "快退双箭头右端的绿色播放按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "fruitloops_windows_54": {
+  "feat": "深灰色圆形按钮，带浅色边框，中间有浅色符号“I”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "数值框右侧滑条末端的按钮",
+  "env_raw": "数值框右侧滑条末端的按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "origin_windows_60": {
+  "feat": "浅灰色方形按钮，中间有一个红色的叉号符号。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中左】、垂直【下部】",
+  "env": "下拉框与剪刀图标之间的图标",
+  "env_raw": "下拉框与剪刀图标之间的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vivado_windows_79": {
+  "feat": "深蓝色双矩形重叠图标，形似复制符号，无文字",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "红色叉号图标左侧紧邻的图标",
+  "env_raw": "红色叉号图标左侧紧邻的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "word_macos_39": {
+  "feat": "浅灰色背景的菜单项，含左对齐图标及文字“Align to Margin”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Align to Page 分组标题下方的菜单项",
+  "env_raw": "Align to Page 分组标题下方的菜单项",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "pycharm_macos_42": {
+  "feat": "无边框或底色，包含蓝色文字“Add Package”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Search for more packages 框右侧齿轮",
+  "env_raw": "Search for more packages 框右侧齿轮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "excel_macos_14": {
+  "feat": "浅灰色矩形背景，左侧带深色竖线，上面有文字“List”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【中上】",
+  "env": "Decimal 选项下方的那个选项",
+  "env_raw": "Decimal 选项下方的那个选项",
+  "env_verdict": "",
+  "env_issue": ""
+ }
+}

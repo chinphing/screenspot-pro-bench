@@ -1,0 +1,182 @@
+{
+ "linux_common_linux_42": {
+  "feat": "深灰色圆形底色，中间有一个白色的铅笔及横线符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Utilities 标题文字右端的圆形按钮",
+  "env_raw": "Utilities 标题文字右端的圆形按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "matlab_macos_64": {
+  "feat": "浅灰色矩形框，内部有红色短横线符号和黑色下拉箭头，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中右】、垂直【正中部】",
+  "env": "Line Style 文字标签右侧的下拉框",
+  "env_raw": "Line Style 文字标签右侧的下拉框",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "powerpoint_windows_56": {
+  "feat": "白色顺时针弯曲箭头图标，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "撤销图标右边紧邻的图标",
+  "env_raw": "撤销图标右边紧邻的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vscode_macos_45": {
+  "feat": "深色背景上的浅红色“X”符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【上部】",
+  "env": "testing_utils.py 标签文字右端的关闭按钮",
+  "env_raw": "testing_utils.py 标签文字右端的关闭按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "solidworks_windows_73": {
+  "feat": "灰色正方形按钮带下拉小箭头，内部有一条两端带圆圈的对角线，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "智能尺寸图标右边第一个图标",
+  "env_raw": "智能尺寸图标右边第一个图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "premiere_windows_27": {
+  "feat": "白色背景上的菜单项，包含黑色文字“Close Panel”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "Edit 标题下方弹出菜单的第一项",
+  "env_raw": "Edit 标题下方弹出菜单的第一项",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "fruitloops_windows_50": {
+  "feat": "一个带有金属光泽的灰白色向右三角形，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "STUDIO PROG文字下方列表右端的三角形",
+  "env_raw": "STUDIO PROG文字下方列表右端的三角形",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "pycharm_macos_1": {
+  "feat": "白色圆角矩形边框，内含符号“>_”，无文字",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【正中部】",
+  "env": "六边形播放图标与感叹号图标之间的图标",
+  "env_raw": "六边形播放图标与感叹号图标之间的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "autocad_windows_10": {
+  "feat": "带圆圈数字1与箭头的图标，下方有文字“引出序号”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "BOM 下拉按钮左侧紧邻的按钮",
+  "env_raw": "BOM 下拉按钮左侧紧邻的按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "windows_common_windows_48": {
+  "feat": "深色矩形背景，左侧蓝色Wi-Fi图标，右侧文字“404notfound Connected, secured”",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【中上】",
+  "env": "Windows Update卡片左侧的Wi-Fi状态卡片",
+  "env_raw": "Windows Update卡片左侧的Wi-Fi状态卡片",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vmware_macos_14": {
+  "feat": "浅灰色圆角矩形按钮，带深色边框，上面有黑色文字“Apply”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Revert按钮右侧紧邻的按钮",
+  "env_raw": "Revert按钮右侧紧邻的按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "android_studio_macos_69": {
+  "feat": "白色圆角矩形图标，顶部有半圆形缺口，无文字或符号。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【上部】",
+  "env": "齿轮图标右侧紧邻的工具栏按钮",
+  "env_raw": "齿轮图标右侧紧邻的工具栏按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "fruitloops_windows_54": {
+  "feat": "深色圆形，带浅色边框，中间有白色的字母I。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "数值框右侧滑条末端的圆形按钮",
+  "env_raw": "数值框右侧滑条末端的圆形按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "pycharm_macos_42": {
+  "feat": "无边框和底色，蓝色文字，内容为“Add Package”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "齿轮图标右侧的蓝色文字",
+  "env_raw": "齿轮图标右侧的蓝色文字",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vivado_windows_77": {
+  "feat": "一个指向右侧的绿色三角形，上面无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【中下】",
+  "env": "双右箭头图标左侧紧邻的按钮",
+  "env_raw": "双右箭头图标左侧紧邻的按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "word_macos_39": {
+  "feat": "浅灰色矩形背景，黑色文字“Align to Margin",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Align to Page下方的选项",
+  "env_raw": "Align to Page下方的选项",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "origin_windows_1": {
+  "feat": "白边红底矩形，内含白色放大镜图标，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中左】、垂直【上部】",
+  "env": "数据管理器”竖排文字右侧列顶端的图标",
+  "env_raw": "数据管理器”竖排文字右侧列顶端的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vivado_windows_79": {
+  "feat": "两个重叠的蓝色矩形图标，无文字",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "红色X图标左侧紧邻的图标",
+  "env_raw": "红色X图标左侧紧邻的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "origin_windows_60": {
+  "feat": "浅灰色盾牌状图标，带深色边框，中心有一个红色的X形符号。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中左】、垂直【下部】",
+  "env": "工具栏中绿色盾牌图标左边第一个图标",
+  "env_raw": "工具栏中绿色盾牌图标左边第一个图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "excel_macos_14": {
+  "feat": "无特殊边框或底色，仅显示黑色文字“List”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【中上】",
+  "env": "Decimal 文字下方紧邻的选项",
+  "env_raw": "Decimal 文字下方紧邻的选项",
+  "env_verdict": "",
+  "env_issue": ""
+ }
+}
