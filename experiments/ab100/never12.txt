@@ -1,0 +1,12 @@
+origin_windows_19
+vivado_windows_5
+macos_common_macos_51
+premiere_windows_49
+unreal_engine_windows_25
+powerpoint_windows_78
+windows_common_windows_62
+quartus_windows_27
+android_studio_macos_75
+word_macos_29
+illustrator_windows_25
+solidworks_windows_45

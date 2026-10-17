@@ -110,6 +110,19 @@ TOOL_DONE = {
             "reason": {"type": "string", "description": "一句话"}}, "required": []},
     },
 }
+TOOL_DONE_CONF = {
+    "type": "function",
+    "function": {
+        "name": "done",
+        "description": ("蓝框已经框住目标元素时调用，结束。"
+                        "必须同时给出你对「蓝框正好框住目标」的把握（0-100 整数）："
+                        "100=完全确定，60=比较确定，30=只能猜。"),
+        "parameters": {"type": "object", "properties": {
+            "confidence": {"type": "integer", "description": "把握 0-100"},
+            "reason": {"type": "string", "description": "一句话"}},
+            "required": ["confidence"]},
+    },
+}
 TOOL_BLURRY = {
     "type": "function",
     "function": {
@@ -224,6 +237,11 @@ PROMPT_STRICT_NOTVIS = PROMPT.replace(_A_STEP1, _S_STEP1).replace(_A_STEP2, _S_S
 BLURRY_JUMP = False
 BLURRY_CROP = 1600
 
+# ── 变体：done() 时要求模型自报置信度（--confidence）────────────────────────
+# 用途：认块并行方案需要「两个候选块各跑一遍流程，取置信度高的那个」。
+# ⚠️ 默认关闭 —— 关闭时工具集与 legacy 逐字一致。
+CONFIDENCE = False
+
 _B_STEP1 = ("  第一步：目标元素是否出现在这张放大图里？\n"
             "          · 否 → 【调用 not_visible()】，我会把视野扩大一圈再给你看\n"
             "          · 是 → 继续第二步\n")
@@ -239,7 +257,8 @@ PROMPT_BLURRY = PROMPT.replace(_B_STEP1, _S_BLURRY)
 
 def _tools_now():
     """当前该用哪套工具。变体按需加工具 / 把 reason 设为必填。"""
-    base = [TOOL_LOC, TOOL_NOTVIS, TOOL_DONE] + ([TOOL_BLURRY] if BLURRY_JUMP else [])
+    _done = TOOL_DONE_CONF if CONFIDENCE else TOOL_DONE
+    base = [TOOL_LOC, TOOL_NOTVIS, _done] + ([TOOL_BLURRY] if BLURRY_JUMP else [])
     if not (DESCRIBE_FIRST or STRICT_NOTVIS):
         return base
     out = []
@@ -391,8 +410,8 @@ def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
                                  "content": "你还没有报过任何框。请先用 locate 报框。"})
                 continue
             trace.append({"turn": turn, "action": "stop", "text": "done()",
-                          "reason": a.get("reason"), "think": _think,
-                          "finish": _ch.get("finish_reason")})
+                          "reason": a.get("reason"), "confidence": a.get("confidence"),
+                          "think": _think, "finish": _ch.get("finish_reason")})
             break
 
         if name == "not_visible":
@@ -544,8 +563,10 @@ def main():
                     help="变体：强化「目标是否在这块裁片里」的判据（默认关闭；关闭时与 legacy 逐字一致）")
     ap.add_argument("--blurry-jump", action="store_true",
                     help="变体：新增 blurry() 工具——目标模糊时报粗略位置，中心移过去并给 1600px 大视野")
+    ap.add_argument("--confidence", action="store_true",
+                    help="变体：done() 时要求模型自报 0-100 的把握（认块并行方案用于择优）")
     args = ap.parse_args()
-    global BACKEND, DESCRIBE_FIRST, PROMPT, L1_BOX_OVERRIDE, STRICT_NOTVIS, BLURRY_JUMP
+    global BACKEND, DESCRIBE_FIRST, PROMPT, L1_BOX_OVERRIDE, STRICT_NOTVIS, BLURRY_JUMP, CONFIDENCE
     BACKEND = args.backend
     if args.describe_first:
         DESCRIBE_FIRST = True
@@ -556,6 +577,8 @@ def main():
     if args.blurry_jump:
         BLURRY_JUMP = True
         PROMPT = PROMPT_BLURRY
+    if args.confidence:
+        CONFIDENCE = True
     if args.l1_box:
         L1_BOX_OVERRIDE = tuple(int(v) for v in args.l1_box.split(","))
     if args.l1_box_file:
@@ -569,7 +592,8 @@ def main():
     _tag = args.tag or (f"b3_crop_ladder_{args.backend}_{args.split}_{args.desc_version}"
                         + ("_df" if args.describe_first else "")
                         + ("_sn" if args.strict_notvis else "")
-                        + ("_bj" if args.blurry_jump else ""))
+                        + ("_bj" if args.blurry_jump else "")
+                        + ("_cf" if args.confidence else ""))
     DESC = json.load(open(_desc_file, encoding="utf-8"))
     rows = {r["id"]: r for r in H.load_all()}
     sx, sy = (int(v) for v in args.start.split(","))

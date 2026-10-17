@@ -1,0 +1,126 @@
+# ab100 受控实验归档
+
+100 条样本（50 条原失败 + 50 条原成功，seed 20261019），**冻结 L1 起点**，
+用于比较「L2 侧干预」与「认块并行方案」。
+
+## 为什么必须冻结 L1
+
+早期两次 A/B 都被污染过：
+
+1. **拿历史结果当对照** → 选择性偏差：新跑一次对照组，自己就修好了 8/50
+2. **两条臂各自重新采样 L1** → 起点差异最大到 1859px
+
+`--l1-box-file` 把 L1 的框冻结成数据（`l1box.json`），两条臂从同一个框起跑。
+
+## 结果总表
+
+| 变体 | 命中 | 原失败 50 | 原成功 50 | 单次 | 结论 |
+|---|---|---|---|---|---|
+| 对照 legacy | 57 | 8/50 | 49/50 | 7.8s | 基线 |
+| describe-first | 58 | 9/50 | 49/50 | 9.8s | 无效 |
+| 反转阶梯 | 49 | 15/50 | 34/50 | 13.1s | 代价太大 |
+| strict-notvis | 63 | 15/50 | 48/50 | 5.8s | +6pp（不显著）|
+| out-px 1600 | 63 | 15/50 | 48/50 | 5.5s | +6pp（**M3 未复现**）|
+| blurry | 60 | 13/50 | 47/50 | 7.6s | +3pp |
+| **认块 + 双块并行 + 置信度（top-3）** | **71** | **27/50** | 44/50 | 3.2min/100 | **+14pp，p≈0.0106** |
+
+⚠️ **只有最后一行显著。** 前面几行都是 +3～6pp，落在 n=100 的噪声区间内
+（n=100 只能可靠检出 ≥10pp）。`out-px 1600` 已在 M3 全量（1261 条）上被证伪：
+83.2% → 83.7%，p≈0.53。
+
+## 认块方案的关键数字
+
+| 项 | 数值 |
+|---|---|
+| 认块召回 top-1 / top-2 / top-3（**none** 思考）| 83% / 93% / **96%** |
+| 认块召回 top-1 / top-2 / top-3（high 思考）| 91% / 97% / 97% |
+| 任一块命中（天花板）| 79/100 |
+| 择优命中 | 71/100 |
+| **块内框误差（命中样本）** | **1–6px**（整屏流程为 20px）|
+| 100 条耗时（10 并发）| 3 分 13 秒 |
+
+**认块用 `none`**：top-2 只差 4pp，但 32 秒 vs 13 分钟。
+
+**块内精度是关键发现**：块是整屏的 1/3，目标大 3 倍，模型「直接指」的误差从 20px 降到 1–6px。
+它缺的不是分辨率，是**坐标换算**能力——所以认块与指位置必须拆开。
+
+## 择优规则（当前实现）
+
+```python
+key  = lambda r: r["conf"] if r.get("conf") is not None else -1
+best = max(ok_runs, key=key)      # 平手时取排在前面的（认块排序更高）
+```
+
+`conf` = `done()` 时模型自报的 0–100 把握；**没 done 记 −1，永远不赢**。
+
+**择优丢掉的 8 条**：
+
+| 原因 | 条数 |
+|---|---|
+| 置信度倒挂（错块报得更高）| 4 |
+| 平手取错 | 2 |
+| 正确块没 done 被 −1 杀掉 | 2（其中 1 条三块都没 done）|
+
+**置信度本身不是随机**：多块都 done 时按置信度选对 68%，
+但**三块全都 done 时退化到 52%**。
+
+## 待办：5 种替代择优判据（**不需要重跑，离线算**）
+
+- **A.** 没 done 记 50 而非 −1
+- **B.** 平手比框大小（取更小的）
+- **C.** 平手比 move 数（取更少的）
+- **D.** `conf + 5×(3−rank)` 加权
+- **E.** 阈值法：rank1 的 conf ≥ 90 直接用，否则再看后面
+
+## 文件
+
+| 文件 | 说明 |
+|---|---|
+| `ids.txt` | 100 条样本 id |
+| `l1box.json` | 冻结的 L1 起点框（id → 归一化 bbox）|
+| `never12.txt` | 12 条「从未命中」的最难样本 |
+| `results/b3_ab100_ctrl_*` | 对照组（legacy）10 分片 |
+| `results/b3_ab100_op1600_*` | out-px 1600，10 分片 |
+| `results/tile_top3_ab100.jsonl` | 认块链路 100 条（每块含 conf/hit/err/trace）|
+| `results/tile_top3_never12.jsonl` | 认块链路 12 条最难样本（9/12 修好）|
+| `results/probe_topk_high.jsonl` | 认块 top-k 探针（high 思考）|
+| `results/probe_topk_none.jsonl` | 认块 top-k 探针（none 思考）|
+
+## 复现
+
+```bash
+cd benchmarks/screenspot_grid
+export QW_BASE=... QW_KEY=... QW_MODEL=qwen3.8-flash     # 凭证不落仓库
+
+# 对照（legacy）：10 分片，每片 10 条
+for i in $(seq 1 10); do
+  IDS=$(sed -n "$(( (i-1)*10+1 )),$(( i*10 ))p" experiments/ab100/ids.txt | paste -sd,)
+  python3 -u baselines/b3_crop_ladder.py --ids "$IDS" --split M3 \
+    --backend qwen --desc-version v2 \
+    --l1-box-file experiments/ab100/l1box.json \
+    --tag b3_ab100_ctrl_M3_v2_q38_s$i &
+done; wait
+
+# 认块链路
+python3 scripts/tile_pipeline.py --ids-file experiments/ab100/ids.txt \
+  --top-k 3 --workers 10 --out /tmp/tile_top3.jsonl
+```
+
+## 代码改动（全部默认关闭）
+
+`baselines/b3_crop_ladder.py` 新增开关：
+`--l1-box` / `--l1-box-file` / `--describe-first` / `--strict-notvis` /
+`--blurry-jump` / `--out-px` / `--confidence`。
+
+**默认路径与 legacy 逐字一致**（PROMPT 683 字符、工具集 3 个、`done.required=[]`）。
+
+新增脚本：
+
+- `scripts/probe_tiles.py` —— 3×3 分块 top-k 探针
+- `scripts/probe_tiles_box.py` —— 块内给框探针（已证伪：74px）
+- `scripts/tile_pipeline.py` —— 认块并行方案
+
+## 下一步
+
+1. **离线试 5 种择优判据**（几分钟，用 `results/tile_top3_ab100.jsonl`）
+2. 判据定稿后 **跑 M3 全量**（1261 条，约 40 分钟）
