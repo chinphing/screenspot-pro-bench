@@ -51,6 +51,10 @@ def main() -> int:
     ap.add_argument("--split", default="M3")
     ap.add_argument("--ids-file", required=True)
     ap.add_argument("--desc-version", default="v2")
+    ap.add_argument("--desc-file", default="", help="直接指定描述文件（优先于 --desc-version）")
+    ap.add_argument("--strip-pos", action="store_true",
+                    help="去掉「屏幕位置」——块图不是整屏，该字段会误导")
+    ap.add_argument("--with-env", action="store_true", help="带上「周边锚点」（实验用）")
     ap.add_argument("--backend", default="qwen")
     ap.add_argument("--out-px", type=int, default=1600)
     ap.add_argument("--max-turns", type=int, default=5)
@@ -75,7 +79,8 @@ def main() -> int:
 
     ids = [i for i in re.split(r"[,\s]+", open(a.ids_file, encoding="utf-8").read()) if i]
     rows = {r["id"]: r for r in H.load_all()}
-    DESC = json.load(open(ROOT / "descriptions" / a.desc_version / f"{a.split}.json",
+    _desc_path = a.desc_file or (ROOT / "descriptions" / a.desc_version / f"{a.split}.json")
+    DESC = json.load(open(_desc_path,
                           encoding="utf-8"))
     TMP = Path(tempfile.mkdtemp(prefix="tilepipe_"))
 
@@ -86,8 +91,11 @@ def main() -> int:
         gt = src["bbox"]
         gcx, gcy = (gt[0] + gt[2]) / 2, (gt[1] + gt[3]) / 2
         ts = pt.tiles_for(W, Hh)
-        desc = (f"· 外观特征：{d['feat']}\n· 控件类型：{d['ctrl']}\n"
-                f"· 屏幕位置：{d['pos']}\n")
+        desc = (f"· 外观特征：{d['feat']}\n· 控件类型：{d['ctrl']}\n")
+        if not a.strip_pos:
+            desc += f"· 屏幕位置：{d['pos']}\n"
+        if a.with_env and d.get("env"):
+            desc += f"· 周边锚点：{d['env']}\n"
 
         t0 = time.time()
         # ① 认块

@@ -1,0 +1,218 @@
+{
+ "matlab_macos_21": {
+  "feat": "黑色实心向右三角形，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "黑色实心向右三角形位于“POSITION”文字下方。",
+  "env_raw": "黑色实心向右三角形位于“POSITION”文字下方。",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vivado_windows_5": {
+  "feat": "蓝色边框矩形内有一个上下双向箭头，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【中下】",
+  "env": "Messages\"标签页左端的关闭叉号",
+  "env_raw": "Messages\"标签页左端的关闭叉号",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "autocad_windows_5": {
+  "feat": "黑色虚线构成斜线，有“中心线”文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【左侧】、垂直【中上】",
+  "env": "同心圆标记下方的十字中心线",
+  "env_raw": "同心圆标记下方的十字中心线",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "quartus_windows_27": {
+  "feat": "蓝色菱形底，内有三个白色垂直箭头和红色波浪线，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【中上】",
+  "env": "SM1.smf 标签文字右端的关闭按钮",
+  "env_raw": "SM1.smf 标签文字右端的关闭按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "linux_common_linux_0": {
+  "feat": "浅米色方框内含一个向下的灰色箭头符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【中上】",
+  "env": "Folder 文字右侧的折叠箭头",
+  "env_raw": "Folder 文字右侧的折叠箭头",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "android_studio_macos_49": {
+  "feat": "灰底圆角矩形边框，内含向左的灰色三角形符号。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "向左箭头图标右侧的旋转屏幕按钮。",
+  "env_raw": "向左箭头图标右侧的旋转屏幕按钮。",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "android_studio_macos_39": {
+  "feat": "深灰色方形按钮，内有白色循环箭头符号。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中左】、垂直【中上】",
+  "env": "Create Device”按钮右侧的问号图标",
+  "env_raw": "Create Device”按钮右侧的问号图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vmware_macos_3": {
+  "feat": "蓝色边框的白色横条，内有白色乱码字符。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Autodetect 选项文字右端的蓝色勾选图标",
+  "env_raw": "Autodetect 选项文字右端的蓝色勾选图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "premiere_windows_2": {
+  "feat": "空心五角星，灰色细线边框，无填充，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中右】、垂直【正中部】",
+  "env": "HDYaSongJ 下方 SimSun 左侧的空心五角星",
+  "env_raw": "HDYaSongJ 下方 SimSun 左侧的空心五角星",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "vivado_windows_74": {
+  "feat": "蓝色方形按钮，内有白色垃圾桶图标，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中左】、垂直【中下】",
+  "env": "Tcl Console 标签文字右端的清空图标",
+  "env_raw": "Tcl Console 标签文字右端的清空图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "solidworks_windows_16": {
+  "feat": "白色横条菜单项，内有黑色齿轮图标和文字“打开(O)... Ctrl+O”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "新建(N)... 下方带齿轮图标的菜单项",
+  "env_raw": "新建(N)... 下方带齿轮图标的菜单项",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "powerpoint_windows_51": {
+  "feat": "带深色边框的矩形图标，内含蓝色山形图案，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "保留源格式」粘贴图标右侧的「A」字母图标",
+  "env_raw": "保留源格式」粘贴图标右侧的「A」字母图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "autocad_windows_15": {
+  "feat": "一个四向箭头图标，旁边有文字“移动”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "移动下方紧邻的复制图标",
+  "env_raw": "移动下方紧邻的复制图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "autocad_windows_13": {
+  "feat": "灰底方形图标内有两条带斜纹的竖条，中间有一条蓝色竖虚线，下方文字为“通孔”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "通孔”左侧的“盲孔”文字右端",
+  "env_raw": "通孔”左侧的“盲孔”文字右端",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "android_studio_macos_75": {
+  "feat": "深蓝色胶囊形滑块开关，内有白色圆形按钮，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Google 文字下方的深蓝色开关",
+  "env_raw": "Google 文字下方的深蓝色开关",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "android_studio_macos_20": {
+  "feat": "浅灰色线条勾勒的矩形轮廓，右下角带绿色小三角，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【上部】",
+  "env": "目标左边是绿色播放按钮，右边是齿轮图标。",
+  "env_raw": "目标左边是绿色播放按钮，右边是齿轮图标。",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "autocad_windows_16": {
+  "feat": "矩形按钮，深色底色，上有白色文字“剪贴板”。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【上部】",
+  "env": "插入文字工具图标右端的剪贴板按钮",
+  "env_raw": "插入文字工具图标右端的剪贴板按钮",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "inventor_windows_34": {
+  "feat": "两个重叠圆环带V形条纹，旁有文字“宏”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【上部】",
+  "env": "在”字左边紧邻的那个宏图标 （注：检查了一下之前的输出发现没有遵守字数限制",
+  "env_raw": "在”字左边紧邻的那个宏图标 （注：检查了一下之前的输出发现没有遵守字数限制",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "origin_windows_56": {
+  "feat": "方形按钮内蓝色折线图，带黑色边框和倒三角。无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【左侧】、垂直【下部】",
+  "env": "目标左侧“按F1键打开帮助文档”提示文字右端的图标",
+  "env_raw": "目标左侧“按F1键打开帮助文档”提示文字右端的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "blender_windows_46": {
+  "feat": "横向灰色圆角长条，内有白色竖线和文字“Plane”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Cylinder 文字上方的 UV Sphere 行",
+  "env_raw": "Cylinder 文字上方的 UV Sphere 行",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "macos_common_macos_51": {
+  "feat": "圆角矩形边框，内有文字“3D”。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中左】、垂直【上部】",
+  "env": "3D”按钮右侧的“Satellite”文字标签",
+  "env_raw": "3D”按钮右侧的“Satellite”文字标签",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "origin_windows_46": {
+  "feat": "长方形浅灰按钮，内有两个黑点阵块和上下黑箭头，无文字。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中左】、垂直【下部】",
+  "env": "红色方框左侧的数字“10”下拉框",
+  "env_raw": "红色方框左侧的数字“10”下拉框",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "davinci_macos_41": {
+  "feat": "灰色线条绘制的方框内有波浪形曲线，无文字。",
+  "ctrl": "元素",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "目标右侧是吸附/磁铁图标，紧邻两个带P和方框标记的图标",
+  "env_raw": "目标右侧是吸附/磁铁图标，紧邻两个带P和方框标记的图标",
+  "env_verdict": "",
+  "env_issue": ""
+ },
+ "macos_common_macos_8": {
+  "feat": "圆形浅灰色按钮，无文字符号。",
+  "ctrl": "按钮",
+  "pos": "屏幕水平【中部】、垂直【正中部】",
+  "env": "Desktop 标签下方的 Documents 图标",
+  "env_raw": "Desktop 标签下方的 Documents 图标",
+  "env_verdict": "",
+  "env_issue": ""
+ }
+}

@@ -189,7 +189,8 @@ _LOCK = threading.Lock()
 
 
 def gen_one(rid: str, row: dict, client, *, do_verify: bool = False,
-            verify_model: str = "qwen3.8-max", quiet: bool = True) -> dict:
+            verify_model: str = "qwen3.8-max", quiet: bool = True,
+            reff: str = "none") -> dict:
     img = Image.open(D.fetch_image(row["img_filename"])).convert("RGB")
     w, h = img.size
     gt = row["bbox"]
@@ -199,6 +200,7 @@ def gen_one(rid: str, row: dict, client, *, do_verify: bool = False,
 
     # ① 外观
     appear = _clean(client.ask_image(tight_crop(img, gt), P_APPEAR, max_tokens=200,
+                             reasoning_effort=reff,
                                      fmt="png"), 40)
     # ② 锚点（整图 + 上下文 + 原始分辨率条带）
     small = V.fit(img)
@@ -209,7 +211,7 @@ def gen_one(rid: str, row: dict, client, *, do_verify: bool = False,
 
     def _gen() -> str:
         return _clean(client.chat([{"role": "user", "content": content}],
-                                  max_tokens=300)["content"], 30)
+                                  max_tokens=300, reasoning_effort=reff)["content"], 30)
 
     def _consistent(feat: str, anc: str) -> bool:
         if not anc or anc in ("无", "无。"):
@@ -273,6 +275,8 @@ def main() -> int:
     ap.add_argument("--backend", default="qwen", choices=list(C.BACKENDS))
     ap.add_argument("--verify-model", default="qwen3.8-max", help="锚点校验模型")
     ap.add_argument("--verify", action="store_true", help="启用锚点校验（默认关闭）")
+    ap.add_argument("--reasoning-effort", default="none",
+                    help="思考强度；none 可避免思考吃光 max_tokens（DS 默认会思考）")
     ap.add_argument("--workers", type=int, default=8, help="并发数（实测 8 并发约 8.6s/条）")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--merge", action="store_true", help="与已有输出合并（只覆盖本次 id）")
@@ -303,7 +307,8 @@ def main() -> int:
     done = 0
     with cf.ThreadPoolExecutor(max_workers=a.workers) as ex:
         futs = {ex.submit(gen_one, rid, rows[rid], client,
-                          do_verify=a.verify, verify_model=a.verify_model, quiet=False): rid
+                          do_verify=a.verify, verify_model=a.verify_model, quiet=False,
+                          reff=a.reasoning_effort): rid
                 for rid in todo}
         for fut in cf.as_completed(futs):
             rid = futs[fut]
