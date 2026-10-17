@@ -60,9 +60,9 @@ def main() -> int:
                     help="认块那一步的思考强度（实测 none 的 top-2=93%%、32s/100 条；"
                          "high 的 top-2=97%% 但要 13 分钟，不值得）")
     ap.add_argument("--early-exit", type=float, default=90.0,
-                    help="rank1 的置信度达到该值就直接采用，不再跑其余块（<0 关闭）")
-    ap.add_argument("--hedge-ms", type=int, default=8000,
-                    help="等 rank1 多久后开跑其余块（毫秒）")
+                    help="rank1 的置信度达到该值就直接采用，其余块不再发（<0 关闭）")
+    ap.add_argument("--hedge-ms", type=int, default=12000,
+                    help="等 rank1 多久后才开跑其余块（毫秒）；实测 12s 最优")
     ap.add_argument("--top-k", type=int, default=2)
     ap.add_argument("--workers", type=int, default=4, help="并发处理的样例数")
     ap.add_argument("--out", default="/tmp/tile_pipeline.jsonl")
@@ -127,7 +127,8 @@ def main() -> int:
                         {"move": "M", "stop": "S", "widen": "W", "blurry": "B"}.get(x.get("action"), "?")
                         for x in (r.get("trace") or []))}
 
-        # 对冲式早退：先只发 rank1；若它在 hedge 时间内回来且够自信，其余块根本不发。
+        # 对冲式早退：先只发 rank1。它在 hedge 窗口内回来且够自信 → 其余块根本不发
+        # （少调用、且没有并发争用，rank1 自己也最快）；否则再并行补发其余块。
         _k = min(a.top_k, len(rank))
         ex = ThreadPoolExecutor(max_workers=_k)
         early = False
