@@ -24,6 +24,7 @@ import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -58,6 +59,10 @@ def main() -> int:
     ap.add_argument("--tile-reasoning", default="none",
                     help="认块那一步的思考强度（实测 none 的 top-2=93%%、32s/100 条；"
                          "high 的 top-2=97%% 但要 13 分钟，不值得）")
+    ap.add_argument("--early-exit", type=float, default=90.0,
+                    help="rank1 的置信度达到该值就直接采用，不再跑其余块（<0 关闭）")
+    ap.add_argument("--hedge-ms", type=int, default=8000,
+                    help="等 rank1 多久后开跑其余块（毫秒）")
     ap.add_argument("--top-k", type=int, default=2)
     ap.add_argument("--workers", type=int, default=4, help="并发处理的样例数")
     ap.add_argument("--out", default="/tmp/tile_pipeline.jsonl")
@@ -122,8 +127,31 @@ def main() -> int:
                         {"move": "M", "stop": "S", "widen": "W", "blurry": "B"}.get(x.get("action"), "?")
                         for x in (r.get("trace") or []))}
 
-        with ThreadPoolExecutor(max_workers=len(rank[:a.top_k])) as ex:
-            runs = list(ex.map(run_tile, rank[:a.top_k]))
+        # 对冲式早退：先只发 rank1；若它在 hedge 时间内回来且够自信，其余块根本不发。
+        _k = min(a.top_k, len(rank))
+        ex = ThreadPoolExecutor(max_workers=_k)
+        early = False
+        try:
+            f1 = ex.submit(run_tile, rank[0])
+            r1 = None
+            try:
+                r1 = f1.result(timeout=max(0.001, a.hedge_ms / 1000.0))
+            except FuturesTimeoutError:
+                r1 = None
+            if (r1 and a.early_exit >= 0 and r1.get("conf") is not None
+                    and r1["conf"] >= a.early_exit):
+                runs = [r1]
+                early = True
+            else:
+                futs = [f1] + [ex.submit(run_tile, t) for t in rank[1:_k]]
+                runs = []
+                for f in futs:
+                    try:
+                        runs.append(f.result())
+                    except Exception:  # noqa: BLE001
+                        pass
+        finally:
+            ex.shutdown(wait=False)
         ok_runs = [r for r in runs if "error" not in r]
 
         # ③ 择优：置信度高的胜；没有置信度（未 done）视为 -1
@@ -131,7 +159,7 @@ def main() -> int:
             return r["conf"] if r.get("conf") is not None else -1
         best = max(ok_runs, key=key) if ok_runs else None
 
-        return {"id": rid, "status": "OK", "rank": rank, "runs": runs,
+        return {"id": rid, "status": "OK", "rank": rank, "runs": runs, "early": early,
                 "best_tile": best["tile"] if best else None,
                 "best_hit": best["hit"] if best else None,
                 "best_err": best["err"] if best else None,
