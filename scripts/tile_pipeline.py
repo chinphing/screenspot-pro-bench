@@ -92,7 +92,7 @@ def main() -> int:
         t0 = time.time()
         # ① 认块
         try:
-            rank, raw, _ = pt.ask(orig, ts, desc, a.tile_reasoning, a.top_k)
+            rank, raw, _ = pt.ask(orig, ts, desc, a.tile_reasoning, a.top_k, a.backend)
         except Exception as e:  # noqa: BLE001
             return {"id": rid, "status": "TILE_ERROR", "error": str(e)[:150]}
         if not rank:

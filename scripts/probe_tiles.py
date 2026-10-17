@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from PIL import Image  # noqa: E402
 from bench import dataset as H  # noqa: E402
+from bench.compat import ds_client as dc  # noqa: E402
 from bench.compat import qwen_client as qc  # noqa: E402
 
 GRID = 3
@@ -53,7 +54,7 @@ def ovl(tile, gt):
     return (ix * iy / ga) if ga > 0 else 0.0
 
 
-def ask(orig, ts, desc, reasoning_effort="high", top_k=1):
+def ask(orig, ts, desc, reasoning_effort="high", top_k=1, backend="qwen"):
     head = (f"下面按【阅读顺序】给出同一张截图的 {len(ts)} 个分块，编号 1-{len(ts)}。\n"
             "这张截图被切成 3×3 共 9 块，位置关系像拼图一样相邻：\n"
             "  第1块 第2块 第3块   ← 屏幕最上一行\n"
@@ -80,8 +81,12 @@ def ask(orig, ts, desc, reasoning_effort="high", top_k=1):
              "只回一个 JSON：{\"tile\": <编号>, \"reason\": \"一句话\"}")
     content.append({"type": "text", "text": f"\n【目标元素描述】\n{desc}\n" + q})
     _mt = 200 if reasoning_effort in (None, "", "none") else 8000
-    r = qc.chat([{"role": "user", "content": content}], max_tokens=_mt,
-                timeout=600, retries=4, extra={"reasoning_effort": reasoning_effort})
+    if backend == "deepseek":
+        r, _ = dc.chat([{"role": "user", "content": content}], max_tokens=_mt,
+                       timeout=600, extra={"reasoning_effort": reasoning_effort})
+    else:
+        r = qc.chat([{"role": "user", "content": content}], max_tokens=_mt,
+                    timeout=600, retries=4, extra={"reasoning_effort": reasoning_effort})
     msg = r["choices"][0]["message"]
     txt = (msg.get("content") or "")
     th = (msg.get("reasoning_content") or "").strip()
