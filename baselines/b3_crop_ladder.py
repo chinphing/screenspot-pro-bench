@@ -110,6 +110,26 @@ TOOL_DONE = {
             "reason": {"type": "string", "description": "一句话"}}, "required": []},
     },
 }
+TOOL_BLURRY = {
+    "type": "function",
+    "function": {
+        "name": "blurry",
+        "description": ("目标【可能】在这张图里，但你【看不清、拿不准】是不是它时调用。"
+                        "报出它【大概】在的位置（粗略框即可）——"
+                        "我会把视野中心移过去、并放大范围给你看，之后再精修。"),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "x0": {"type": "integer", "description": "大概位置左边缘（1-1000）"},
+                "y0": {"type": "integer", "description": "大概位置上边缘（1-1000）"},
+                "x1": {"type": "integer", "description": "大概位置右边缘（1-1000）"},
+                "y1": {"type": "integer", "description": "大概位置下边缘（1-1000）"},
+                "reason": {"type": "string", "description": "你看到的模糊情况（一句话）"},
+            },
+            "required": ["x0", "y0", "x1", "y1"],
+        },
+    },
+}
 
 PROMPT = """你是一个界面元素定位助手。每一轮我只给你【一张图】：
 【放大图】——界面的一小块，放大 {ZOOM} 倍。你看不到屏幕的其他部分。
@@ -147,6 +167,91 @@ PROMPT = """你是一个界面元素定位助手。每一轮我只给你【一�
 {desc}
 """
 
+# ── 变体：先描述再动作（--describe-first）────────────────────────────────────
+# 动机（M3 失败集分析，n=1261）：
+#   · 成功样例的 reason 都是「我的框在哪 vs 目标在哪 + 往哪移」；
+#     失败样例只说「未覆盖/未找到」不说方位。
+#   · 多轮时成功样例 65% 越调越好；失败样例 57% 越调越坏。
+# 做法：在三步判定之前插一个「第零步」，强制先陈述当前位置关系，并把 reason 设为必填。
+# ⚠️ 默认关闭 —— 关闭时 PROMPT / 工具集与 legacy 逐字一致。
+DESCRIBE_FIRST = False
+L1_BOX_OVERRIDE = None   # 受控 A/B 用：给定归一化起点框则跳过 L1 调用
+
+_ANCHOR = "请【严格按顺序】判断：\n"
+_DESCRIBE_BLOCK = (
+    "\n  第零步【必须先做】：用一句话说清【当前位置关系】，写进 reason 字段——\n"
+    "          · 蓝框现在盖在什么上？（描述你看到的那个元素）\n"
+    "          · 目标元素相对蓝框在【左 / 右 / 上 / 下】哪个方向？大概差多远（占这张图几分之几）？\n"
+    "          ⚠️ 没写清位置关系的动作无效，会被打回。\n"
+)
+assert _ANCHOR in PROMPT, "变体锚点失效：PROMPT 已被改动"
+PROMPT_DESCRIBE_FIRST = PROMPT.replace(_ANCHOR, _ANCHOR + _DESCRIBE_BLOCK)
+
+# ── 变体：强化「目标是否出现在这块里」的判据（--strict-notvis）────────────────
+# 动机（受控实验，n=100）：对照臂 83/100 条【视野切换 0 次】——
+#   模型几乎从不怀疑"目标不在这块裁片里"，于是在错误位置挑一个最像的元素，
+#   再被第二步的"不要因描述有出入而改判"锁死 → 自信答错。
+# 做法：给第一步可执行的判据（说不出哪个元素符合外观 = 否），
+#       并把第二步的免责句限定为"边界不贴合"，允许因外观不符退回第一步。
+# ⚠️ 默认关闭 —— 关闭时 PROMPT 与 legacy 逐字一致。
+STRICT_NOTVIS = False
+
+_A_STEP1 = ("  第一步：目标元素是否出现在这张放大图里？\n"
+            "          · 否 → 【调用 not_visible()】，我会把视野扩大一圈再给你看\n"
+            "          · 是 → 继续第二步\n")
+_S_STEP1 = ("  第一步：目标元素是否出现在这张放大图里？\n"
+            "          ⚠️ 目标【很可能不在这块里】——这块只是上一轮框的附近区域，\n"
+            "             上一轮框偏了的话，目标就在画面之外。\n"
+            "          · 先在这张图里逐个看：哪个元素符合描述里的【外观特征】？\n"
+            "          · 一个都说不出来 → 【调用 not_visible()】，我会换一档视野给你看。\n"
+            "          · 找到了符合的那个 → 继续第二步。\n"
+            "          ⚠️ 不要因为这里有个位置差不多的元素就认定它是目标——\n"
+            "             位置接近【不等于】是目标；外观不符合，就【不是】目标。\n")
+_A_STEP2 = "          · 【不要】因为描述（外观、文字）有出入而改判——那与位置无关。\n"
+_S_STEP2 = ("          · 【不要】因为框的边界不够贴合而改判——那与位置无关。\n"
+            "            （但若该元素外观根本不符合描述，说明第一步找错了，退回第一步）\n")
+assert _A_STEP1 in PROMPT, "strict 变体锚点1失效：PROMPT 已被改动"
+assert _A_STEP2 in PROMPT, "strict 变体锚点2失效：PROMPT 已被改动"
+PROMPT_STRICT_NOTVIS = PROMPT.replace(_A_STEP1, _S_STEP1).replace(_A_STEP2, _S_STEP2)
+
+# ── 变体：目标模糊时给粗略定位（--blurry-jump）──────────────────────────────
+# 动机（受控实验，n=100）：
+#   · not_visible 只扩大半径、【不移动中心】；离线重算 287 次放大，19.5% 完全没盖住目标
+#   · 模型只有「确定」与「看不见」两个出口，缺「看到了但拿不准」这个中间态
+# 做法：新增 blurry(粗略框) —— 把裁片中心移到模型给的位置，给一屏 1600px 大视野，
+#       之后回到常规 200px 阶梯（li 归零）。
+# ⚠️ 默认关闭 —— 关闭时提示词与工具集与 legacy 逐字一致。
+BLURRY_JUMP = False
+BLURRY_CROP = 1600
+
+_B_STEP1 = ("  第一步：目标元素是否出现在这张放大图里？\n"
+            "          · 否 → 【调用 not_visible()】，我会把视野扩大一圈再给你看\n"
+            "          · 是 → 继续第二步\n")
+_S_BLURRY = ("  第一步：目标元素是否出现在这张放大图里？\n"
+             "          · 完全看不到 → 【调用 not_visible()】，我会把视野扩大一圈再给你看\n"
+             "          · 看到了但【拿不准】——好像在这里，却看不清、或不确定是不是它\n"
+             "            → 【调用 blurry()】，报出它【大概】在的位置（粗略框即可）。\n"
+             "              我会把视野中心移过去、并放大范围给你看，之后再精修。\n"
+             "          · 看清楚了 → 继续第二步\n")
+assert _B_STEP1 in PROMPT, "blurry 变体锚点失效：PROMPT 已被改动"
+PROMPT_BLURRY = PROMPT.replace(_B_STEP1, _S_BLURRY)
+
+
+def _tools_now():
+    """当前该用哪套工具。变体按需加工具 / 把 reason 设为必填。"""
+    base = [TOOL_LOC, TOOL_NOTVIS, TOOL_DONE] + ([TOOL_BLURRY] if BLURRY_JUMP else [])
+    if not (DESCRIBE_FIRST or STRICT_NOTVIS):
+        return base
+    out = []
+    for _t in base:
+        _t2 = json.loads(json.dumps(_t))          # deepcopy（不额外引 import）
+        _req = list(_t2["function"]["parameters"].get("required") or [])
+        if "reason" not in _req:
+            _req.append("reason")
+        _t2["function"]["parameters"]["required"] = _req
+        out.append(_t2)
+    return out
+
 
 def _i(v, default=0):
     """健壮取整：模型可能返回 null / '' / '12' / 12.7。"""
@@ -168,7 +273,7 @@ def _desc_lines(d):
 
 def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
             reasoning_effort="none", start=(500, 500), max_tokens=1500, tries=10,
-            full_px=2.5e6):
+            full_px=2.5e6, out_px=0):
     orig = Image.open(H.fetch_image(src["img_filename"])).convert("RGB")
     W0, H0 = orig.size
     _k = min(1.0, (full_px / (W0 * H0)) ** 0.5)
@@ -205,21 +310,27 @@ def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
 
     t0 = time.time()
     # ── 阶段1：L1 短提示（整图 + 纯文本）拿粗定位 ──
-    _l1p = L1_PROMPT.format(env=d.get("env", ""), text=d.get("text", ""),
-                            **{k: v for k, v in d.items() if k not in ("env", "text")})
-    if BACKEND == "qwen":
-        _r = qc.chat([{"role": "user", "content": [
-            {"type": "image_url", "image_url": {"url":
-                f"data:image/png;base64,{qc._b64_png(full_base)}"}},
-            {"type": "text", "text": _l1p}]}],
-            max_tokens=512, timeout=300, retries=4,
-            extra={"reasoning_effort": reasoning_effort or "none"})
-        _t1 = _r["choices"][0]["message"].get("content") or ""
+    _ov = (L1_BOX_OVERRIDE.get(rid) if isinstance(L1_BOX_OVERRIDE, dict)
+           else L1_BOX_OVERRIDE)
+    if _ov is not None:
+        # 受控 A/B：跳过 L1 调用，两臂共享同一个起点框（消掉 L1 的随机噪声）
+        cur_box = [float(v) for v in _ov]
     else:
-        _t1, _, _, _ = dc.ask_image(full_base, _l1p, max_tokens=512,
-                                    reasoning_effort=reasoning_effort)
-    _m1 = H.NUM4.findall(_t1)
-    cur_box = [float(v) for v in _m1[-1]] if _m1 else None
+        _l1p = L1_PROMPT.format(env=d.get("env", ""), text=d.get("text", ""),
+                                **{k: v for k, v in d.items() if k not in ("env", "text")})
+        if BACKEND == "qwen":
+            _r = qc.chat([{"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url":
+                    f"data:image/png;base64,{qc._b64_png(full_base)}"}},
+                {"type": "text", "text": _l1p}]}],
+                max_tokens=512, timeout=300, retries=4,
+                extra={"reasoning_effort": reasoning_effort or "none"})
+            _t1 = _r["choices"][0]["message"].get("content") or ""
+        else:
+            _t1, _, _, _ = dc.ask_image(full_base, _l1p, max_tokens=512,
+                                        reasoning_effort=reasoning_effort)
+        _m1 = H.NUM4.findall(_t1)
+        cur_box = [float(v) for v in _m1[-1]] if _m1 else None
     nx, ny = start
     if cur_box:
         nx = int(round((cur_box[0] + cur_box[2]) / 2))
@@ -237,7 +348,9 @@ def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
         n_move = 1
 
     li = 0                      # 裁片阶梯下标
-    CP, ZM = ladder[li], zoom
+    CP = ladder[li]
+    # 放大倍率：固定输出尺寸时由 out_px 决定（render_crop 内部即 int(cp*zm)），否则沿用固定倍率
+    ZM = (out_px / CP) if out_px else zoom
     crop, cbox = render_crop(cur_box, CP, ZM)
     messages = [{"role": "user", "content": [
         {"type": "text", "text": f"【放大图】界面的一小块，边长约 {CP}px，放大 {ZM} 倍"
@@ -249,7 +362,7 @@ def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
     for turn in range(1, max_turns + 1):
         _mt = max_tokens if reasoning_effort in (None, "", "none") else max(max_tokens, 8000)
         extra = {"reasoning_effort": reasoning_effort,
-                 "tools": [TOOL_LOC, TOOL_NOTVIS, TOOL_DONE], "tool_choice": "auto"}
+                 "tools": _tools_now(), "tool_choice": "auto"}
         if BACKEND == "qwen":
             resp = qc.chat(messages, max_tokens=_mt, extra=extra,
                            timeout=300, retries=4)
@@ -278,13 +391,15 @@ def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
                                  "content": "你还没有报过任何框。请先用 locate 报框。"})
                 continue
             trace.append({"turn": turn, "action": "stop", "text": "done()",
-                          "think": _think, "finish": _ch.get("finish_reason")})
+                          "reason": a.get("reason"), "think": _think,
+                          "finish": _ch.get("finish_reason")})
             break
 
         if name == "not_visible":
             if li < len(ladder) - 1:
                 li += 1
-            CP, ZM = ladder[li], zoom
+            CP = ladder[li]
+            ZM = (out_px / CP) if out_px else zoom
             crop, cbox = render_crop(cur_box, CP, ZM)
             trace.append({"turn": turn, "action": "widen",
                           "text": f"目标不在裁片 → 视野扩到 {CP}px",
@@ -301,6 +416,43 @@ def run_one(rid, src, d, *, max_turns=5, ladder=(200, 400, 800, 1600), zoom=4,
             messages.append({"role": "user", "content": [
                 {"type": "text", "text": f"【放大图】扩大后的视野，边长约 {CP}px，放大 {ZM} 倍"
                                          f"（{crop.width} x {crop.height} 像素）。"},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{dc.b64_jpeg(crop)}"}},
+                {"type": "text", "text": PROMPT.format(ZOOM=ZM, desc=_desc_lines(d))},
+            ]})
+            continue
+
+        if name == "blurry":
+            # 目标模糊：把裁片中心【移到模型给的粗略位置】，给一屏 BLURRY_CROP(1600)px 大视野，
+            # 之后回到常规 200px 阶梯（li 归零）
+            x0, x1 = _i(a.get("x0")), _i(a.get("x1"))
+            y0, y1 = _i(a.get("y0")), _i(a.get("y1"))
+            x0, x1 = (x0, x1) if x0 <= x1 else (x1, x0)
+            y0, y1 = (y0, y1) if y0 <= y1 else (y1, y0)
+            gx0, gy0, gx1, gy1 = cbox
+            cur_box = [gx0 + x0 / 1000.0 * (gx1 - gx0), gy0 + y0 / 1000.0 * (gy1 - gy0),
+                       gx0 + x1 / 1000.0 * (gx1 - gx0), gy0 + y1 / 1000.0 * (gy1 - gy0)]
+            cur_box = [max(0.0, min(1000.0, v)) for v in cur_box]
+            trace.append({"turn": turn, "action": "blurry",
+                          "bbox_raw": [x0, y0, x1, y1],
+                          "bbox_orig": [round(v) for v in cur_box],
+                          "reason": (a.get("reason") or "")[:70], "think": _think,
+                          "finish": _ch.get("finish_reason")})
+            li = 0
+            CP = BLURRY_CROP
+            ZM = (out_px / CP) if out_px else zoom
+            crop, cbox = render_crop(cur_box, CP, ZM)
+            for _m in messages:
+                _c = _m.get("content")
+                if isinstance(_c, list):
+                    for _b in _c:
+                        if isinstance(_b, dict) and _b.get("type") == "image_url":
+                            _b.clear(); _b.update({"type": "text", "text": "（上一轮的图，已省略）"})
+            messages.append({"role": "assistant", "content": msg.get("content") or "", "tool_calls": tcs})
+            messages.append({"role": "tool", "tool_call_id": tc["id"],
+                             "content": f"已把视野中心移到你报的位置，并扩大到 {CP}px（放大 {ZM} 倍）。请看新图。"})
+            messages.append({"role": "user", "content": [
+                {"type": "text", "text": f"【放大图】以你报的粗略位置为中心，边长约 {CP}px，"
+                                         f"放大 {ZM} 倍（{crop.width} x {crop.height} 像素）。"},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{dc.b64_jpeg(crop)}"}},
                 {"type": "text", "text": PROMPT.format(ZOOM=ZM, desc=_desc_lines(d))},
             ]})
@@ -373,21 +525,51 @@ def main():
     ap.add_argument("--max-turns", type=int, default=5)
     ap.add_argument("--ladder", default="200,400,800,1600")
     ap.add_argument("--zoom", type=int, default=4)
+    ap.add_argument("--out-px", type=int, default=0,
+                    help="固定裁片【输出边长】（像素）。0 = 沿用 --zoom 固定倍率（legacy 行为）。"
+                         "例：--out-px 1600 时 200px 档=8×、1600px 档=1×")
     ap.add_argument("--reasoning-effort", default="none")
     ap.add_argument("--backend", choices=["deepseek", "qwen"], default="deepseek")
     ap.add_argument("--start", default="500,500")
     ap.add_argument("--max-tokens", type=int, default=1500)
     ap.add_argument("--tries", type=int, default=10)
     ap.add_argument("--full-px", type=float, default=2.5e6)
+    ap.add_argument("--describe-first", action="store_true",
+                    help="变体：强制模型先陈述位置关系再动作（默认关闭；关闭时与 legacy 逐字一致）")
+    ap.add_argument("--l1-box", default="",
+                    help="跳过 L1 调用，直接用给定归一化框 x0,y0,x1,y1（0-1000）。受控 A/B 用")
+    ap.add_argument("--l1-box-file", default="",
+                    help="按 id 指定起点框的 JSON（{id:[x0,y0,x1,y1]}），优先级高于 --l1-box")
+    ap.add_argument("--strict-notvis", action="store_true",
+                    help="变体：强化「目标是否在这块裁片里」的判据（默认关闭；关闭时与 legacy 逐字一致）")
+    ap.add_argument("--blurry-jump", action="store_true",
+                    help="变体：新增 blurry() 工具——目标模糊时报粗略位置，中心移过去并给 1600px 大视野")
     args = ap.parse_args()
-    global BACKEND
+    global BACKEND, DESCRIBE_FIRST, PROMPT, L1_BOX_OVERRIDE, STRICT_NOTVIS, BLURRY_JUMP
     BACKEND = args.backend
+    if args.describe_first:
+        DESCRIBE_FIRST = True
+        PROMPT = PROMPT_DESCRIBE_FIRST
+    if args.strict_notvis:
+        STRICT_NOTVIS = True
+        PROMPT = PROMPT_STRICT_NOTVIS
+    if args.blurry_jump:
+        BLURRY_JUMP = True
+        PROMPT = PROMPT_BLURRY
+    if args.l1_box:
+        L1_BOX_OVERRIDE = tuple(int(v) for v in args.l1_box.split(","))
+    if args.l1_box_file:
+        L1_BOX_OVERRIDE = {k: tuple(int(x) for x in v) for k, v in
+                           json.load(open(args.l1_box_file, encoding="utf-8")).items()}
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     _ids = args.ids or ",".join(json.load(
         open(os.path.join(_root, "splits", f"{args.split}.json"), encoding="utf-8")))
     _desc_file = args.desc_file or os.path.join(
         _root, "descriptions", args.desc_version, f"{args.split}.json")
-    _tag = args.tag or f"b3_crop_ladder_{args.backend}_{args.split}_{args.desc_version}"
+    _tag = args.tag or (f"b3_crop_ladder_{args.backend}_{args.split}_{args.desc_version}"
+                        + ("_df" if args.describe_first else "")
+                        + ("_sn" if args.strict_notvis else "")
+                        + ("_bj" if args.blurry_jump else ""))
     DESC = json.load(open(_desc_file, encoding="utf-8"))
     rows = {r["id"]: r for r in H.load_all()}
     sx, sy = (int(v) for v in args.start.split(","))
@@ -402,7 +584,8 @@ def main():
             rec = run_one(rid, rows[rid], DESC[rid], max_turns=args.max_turns,
                           ladder=lad, zoom=args.zoom,
                           reasoning_effort=args.reasoning_effort, start=(sx, sy),
-                          max_tokens=args.max_tokens, tries=args.tries, full_px=args.full_px)
+                          max_tokens=args.max_tokens, tries=args.tries, full_px=args.full_px,
+                          out_px=args.out_px)
         except Exception as e:  # noqa: BLE001
             rec = {"id": rid, "status": "ERROR", "error": str(e)[:200]}
         recs.append(rec)
