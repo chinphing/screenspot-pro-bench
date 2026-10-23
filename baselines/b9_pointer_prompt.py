@@ -167,18 +167,22 @@ TOOL_REPORT = {
     "type": "function",
     "function": {
         "name": "report",
-        "description": "报告校验结论。先描述蓝框里是什么，再判断它是不是目标。",
+        "description": "报告校验结论。why 开头先描述蓝框里是什么，再给判定依据。",
         "parameters": {
             "type": "object",
             "properties": {
-                "in_box": {"type": "string",
-                           "description": "蓝框里实际是什么？只描述看到的文字/图标/控件"},
-                "anchor_seen": {"type": "string",
-                                "description": ("目标描述的「周边锚点」，在这张图里能看到吗？"
-                                                "看到就写它是什么；看不到就写「看不到」。必填")},
                 "match": {"type": "string", "enum": ["yes", "no", "unclear"],
                           "description": "蓝框里的东西是不是目标描述的元素"},
-                "why": {"type": "string", "description": "判定依据，一句话"},
+                "confidence": {
+                    "type": "string",
+                    "enum": ["high", "medium"],
+                    "description": ("match=yes 时填。文字+方位+图标+颜色四项全中填 high；"
+                                    "文字和方位对上、图标或颜色不符填 medium"
+                                    "（这仍然算找到了，颜色在 hover/disabled 态会变）")},
+                "why": {"type": "string",
+                        "description": ("一句话，先说蓝框里实际是什么（文字/图标/控件），"
+                                        "再说判定依据，锚点在这张图里看没看到也写在这里。"
+                                        "判 no 时要说清框里缺了目标的哪一部分")},
                 "unclear_kind": {
                     "type": "string",
                     "enum": ["", "anchor_out_of_view", "too_small", "too_blurry", "ambiguous", "box_too_tight"],
@@ -194,7 +198,7 @@ TOOL_REPORT = {
                 "elsewhere_desc": {"type": "string",
                                    "description": "那个位置看起来是什么"},
             },
-            "required": ["in_box", "anchor_seen", "match", "why"],
+            "required": ["match", "why"],
         },
     },
 }
@@ -245,12 +249,12 @@ PROMPT_VERIFY = """这张图是从屏幕上裁下来的一块（不是整屏）�
 【目标元素描述】
 {desc}
 【任务】
-① 先看蓝框里实际是什么（文字/图标/控件），填 in_box。
+① 先看蓝框里实际是什么（文字/图标/控件），写进 why 的开头。
 ② 再判断蓝框里的这个东西，是不是上面描述的目标元素。
 
 【判定规则】
 1. 外观特征要对上。
-2. **必须核对周边锚点**：先回答 anchor_seen——目标描述的锚点在这张图里能看到吗？
+2. **必须核对周边锚点**：目标描述的锚点在这张图里能看到吗？把结论写进 why。
    - 看得到：写出它是什么，并核对它和目标的相对位置是否一致。
    - 看不到：填「看不到」，并判 unclear + anchor_out_of_view，**不能假定它匹配**。
    - 锚点对不上（比如目标说"X 正下方"，实际不在 X 下方）→ 判 **no**。
@@ -375,20 +379,19 @@ def verifier(img, d):
         m = (a.get("match") or "").strip().lower()
         if m not in ("yes", "no", "unclear"):
             continue
-        if not (a.get("in_box") or "").strip():
+        why = (a.get("why") or "").strip()
+        if not why:
             continue        # 没描述框里是什么，结论不可信，重试
         return {
             "match": m,
-            "in_box": (a.get("in_box") or "").strip()[:200],
-            "anchor_seen": (a.get("anchor_seen") or "").strip()[:200],
-            "why": (a.get("why") or "").strip()[:200],
+            "why": why[:200],
+            "confidence": (a.get("confidence") or "").strip().lower(),
             "unclear_kind": (a.get("unclear_kind") or "").strip().lower(),
             "elsewhere_dir": (a.get("elsewhere_dir") or "").strip().lower(),
             "elsewhere_desc": (a.get("elsewhere_desc") or "").strip()[:150],
         }, think
     return {"match": "unclear", "why": "校验器无有效输出", "confidence": "",
             "unclear_kind": "too_blurry", "elsewhere_dir": "", "elsewhere_desc": ""}, ""
-
 
 # ---------------------------------------------------------------- 主循环
 
@@ -461,7 +464,8 @@ def run_one(rid, src, d, *, max_locate=3, max_verify_retry=2, mode=None):
 
         # —— 判 no：决定在哪儿重新定位 ——
         # hint 用 why（why 开头就是「框里实际是什么」），与 pointer 的 refine_hint 一致。
-        hint = f"你上次给的框里实际是【{v['in_box']}】，不是目标。"
+        # hint 用 why（why 开头就是「框里实际是什么」），与 pointer 的 refine_hint 一致。
+        hint = f"你上次给的框里实际是【{v['why']}】，不是目标。"
         if v.get("elsewhere_dir"):
             hint += f"目标可能在框的 {v['elsewhere_dir']} 方向，{v.get('elsewhere_desc') or ''}。"
         else:
