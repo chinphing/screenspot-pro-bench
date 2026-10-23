@@ -27,6 +27,18 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
+
+# 密钥放本目录 .env（已被 .gitignore 排除），格式见 .env.example。
+# 用 python-dotenv 而不是靠 shell export：一次填好所有基线脚本都读得到，
+# 也不会因为 /tmp 被系统清理而失效（/tmp/qw.env 就被清过一次）。
+# 缺 python-dotenv 时静默跳过，仍可用环境变量。
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except ImportError:
+    pass
 
 DEFAULT_TIMEOUT = 300
 DEFAULT_RETRIES = 4

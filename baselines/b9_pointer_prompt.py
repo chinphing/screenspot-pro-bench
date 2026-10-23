@@ -356,7 +356,12 @@ def locator(img, d, mode, *, bounds=None, W0=1, H0=1, is_full=True, hint="", ret
 
 
 def verifier(img, d):
-    """返回 (dict, think)。dict 含 match / in_box / unclear_kind / elsewhere_dir。"""
+    """返回 (dict, think)。dict 含 match / why / unclear_kind / elsewhere_dir。
+
+    字段与 pointer 的 VerifyVerdict 对齐：`why` 开头就是「框里实际是什么」，
+    不再单独设 in_box / anchor_seen——多一个必填字段，模型就多一处漏填，
+    而控制器真正用到的只有 why。
+    """
     parts = [{"type": "text", "text": "【裁剪图】"},
              {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{_b64(img)}"}},
              {"type": "text", "text": PROMPT_VERIFY.format(desc=_desc_block(d))}]
@@ -381,7 +386,7 @@ def verifier(img, d):
             "elsewhere_dir": (a.get("elsewhere_dir") or "").strip().lower(),
             "elsewhere_desc": (a.get("elsewhere_desc") or "").strip()[:150],
         }, think
-    return {"match": "unclear", "in_box": "", "why": "校验器无有效输出",
+    return {"match": "unclear", "why": "校验器无有效输出", "confidence": "",
             "unclear_kind": "too_blurry", "elsewhere_dir": "", "elsewhere_desc": ""}, ""
 
 
@@ -455,6 +460,7 @@ def run_one(rid, src, d, *, max_locate=3, max_verify_retry=2, mode=None):
             continue
 
         # —— 判 no：决定在哪儿重新定位 ——
+        # hint 用 why（why 开头就是「框里实际是什么」），与 pointer 的 refine_hint 一致。
         hint = f"你上次给的框里实际是【{v['in_box']}】，不是目标。"
         if v.get("elsewhere_dir"):
             hint += f"目标可能在框的 {v['elsewhere_dir']} 方向，{v.get('elsewhere_desc') or ''}。"

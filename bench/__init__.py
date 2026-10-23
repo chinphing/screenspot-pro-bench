@@ -8,7 +8,19 @@
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+# 密钥统一在包入口加载，保证任何子模块（含 bench.compat.qwen_client，
+# 它在模块级读 os.environ）import 时都能看到。
+# 密钥放项目根 .env（已被 .gitignore 排除），格式见 .env.example。
+# 不用 /tmp：macOS 会定期清理，之前 /tmp/qw.env 就被清过一次。
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except ImportError:
+    pass
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
