@@ -2,13 +2,24 @@
 """生成 M1 / M2 / M3 划分（可复现）。
 
 M1 = 20 条开发集（前序实验用的固定集合，硬编码在本脚本里）
-M2 = 300 条验证集（分层抽样：一级=应用，二级=目标尺寸档；种子 20261016）
+M2 = 100 条受控验证集（= experiments/ab100 的冻结集合：50 条原失败 + 50 条原成功）
 M3 = 其余全部（留出集）
 
     python3 scripts/make_splits.py            # 写入 splits/
     python3 scripts/make_splits.py --verify   # 只校验已有划分与算法一致
 
 ⚠️ 划分一旦用于定成绩就不许再改；改种子等于换评测集。
+
+为什么 M2 换成 ab100（2026-10-23）
+    原来 M2 是按「应用 × 目标尺寸档」分层抽样的 300 条，问题是对比实验跑不动：
+    300 条 × 每条约 30s，两臂就要 5 小时，迭代一轮太慢。
+    ab100 是早就冻结的受控集（`experiments/ab100/ids.txt`，seed 20261019），
+    50% 原失败 + 50% 原成功，命中率对方案差异更敏感——刻意放大了信号。
+    代价是它的绝对命中率不能代表自然分布（M3 真实失败率约 17%，ab100 是 50%），
+    所以最终成绩仍以 M3 为准，M2 只用来快速筛方案。
+
+    原 M2 的 300 条没有丢，全部并入 M3（M3 = 原M2 + 原M3 − ab100）。
+    旧划分备份在 `splits/_legacy/`。
 """
 from __future__ import annotations
 
@@ -24,8 +35,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from bench import SPLITS  # noqa: E402
 from bench import dataset as D  # noqa: E402
 
-SEED = 20261016
-N_M2 = 300
+ROOT = Path(__file__).resolve().parent.parent
+# M2 的冻结来源。100 个 id 逗号分隔一行，由 experiments/ab100 的实验产生并锁定。
+AB100_IDS = ROOT / "experiments" / "ab100" / "ids.txt"
+N_M3_LEGACY_M2 = 300  # 仅用于 --verify 时核对并集规模
 
 M1 = [
     "powerpoint_windows_56", "origin_windows_1", "vscode_macos_45", "matlab_macos_64",
@@ -41,46 +54,29 @@ def size_bucket(r: dict) -> str:
     return "小(<40)" if L < 40 else ("中(40-120)" if L <= 120 else "大(>120)")
 
 
+def load_ab100() -> list[str]:
+    """读冻结的 ab100 集合（M2 的来源）。"""
+    if not AB100_IDS.exists():
+        raise SystemExit(f"找不到 {AB100_IDS}——M2 依赖它，缺失就无法复现划分")
+    ids = [x.strip() for x in AB100_IDS.read_text(encoding="utf-8").replace("\n", ",").split(",") if x.strip()]
+    if len(ids) != len(set(ids)):
+        raise SystemExit(f"ab100 有重复 id：{len(ids)} 条中只有 {len(set(ids))} 个唯一值")
+    return ids
+
+
 def make(rows: list[dict]) -> dict:
     m1 = set(M1)
-    pool = [r for r in rows if r["id"] not in m1]
+    m2 = load_ab100()
 
-    # 一级分层：应用（按占比等比分配名额）
-    by_app: dict[str, list[dict]] = defaultdict(list)
-    for r in pool:
-        by_app[r["application"]].append(r)
-    alloc = {app: max(1, round(N_M2 * len(rs) / len(pool))) for app, rs in by_app.items()}
-    diff = N_M2 - sum(alloc.values())
-    while diff != 0:
-        k = (max if diff < 0 else min)(
-            alloc, key=lambda a: alloc[a] if diff < 0 else len(by_app[a]) - alloc[a])
-        if diff < 0:
-            alloc[k] -= 1
-            diff += 1
-        elif alloc[k] < len(by_app[k]):
-            alloc[k] += 1
-            diff -= 1
-        else:
-            break
+    overlap = m1 & set(m2)
+    if overlap:
+        raise SystemExit(f"ab100 与 M1 有交集，划分会互相污染：{sorted(overlap)[:5]}")
+    known = {r["id"] for r in rows}
+    missing = [i for i in m2 if i not in known]
+    if missing:
+        raise SystemExit(f"ab100 有 {len(missing)} 个 id 不在数据集里：{missing[:5]}")
 
-    # 二级分层：应用内按目标尺寸档占比分配
-    rnd = random.Random(SEED)
-    m2: list[str] = []
-    for app, rs in sorted(by_app.items()):
-        n = alloc[app]
-        buckets: dict[str, list[dict]] = defaultdict(list)
-        for r in rs:
-            buckets[size_bucket(r)].append(r)
-        pick: list[dict] = []
-        for b in sorted(buckets):
-            nb = min(max(1, round(n * len(buckets[b]) / len(rs))) if n >= len(buckets) else 0,
-                     len(buckets[b]))
-            pick += rnd.sample(buckets[b], nb)
-        if len(pick) < n:
-            rest = [r for r in rs if r not in pick]
-            pick += rnd.sample(rest, min(n - len(pick), len(rest)))
-        m2 += [r["id"] for r in pick[:n]]
-
+    # M3 = 其余全部（含原 M2 那 300 条，它们没有被丢掉，只是降级为留出集）
     m2set = set(m2)
     m3 = [r["id"] for r in rows if r["id"] not in m1 and r["id"] not in m2set]
     return {"M1": list(M1), "M2": m2, "M3": m3}

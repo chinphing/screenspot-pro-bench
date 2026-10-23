@@ -168,6 +168,12 @@ def evaluate(rows: list[dict]) -> dict:
             calls.append(r["n_move"] + 1)
         elif r.get("iterations"):          # 历史 verify_loop 结果：L1 + 每轮校验
             calls.append(len(r["iterations"]) + 1)
+        elif r.get("trace"):
+            # b5/b9 解耦循环：trace 里每次 locate / verify 都是一次模型调用。
+            # 没有这个分支时 calls 恒为空，format_line 会因 None 崩掉——
+            # 这也是 b5 一直没能进 RESULTS.md 的原因。
+            stages = [t.get("stage") for t in r["trace"]]
+            calls.append(stages.count("locate") + stages.count("verify"))
     return {
         "n": len(ok), "err": len(errs),
         "hit": len(d_center), "rate": len(d_center) / len(ok) if ok else 0.0,
@@ -202,6 +208,14 @@ def format_line(label: str, m: dict) -> str:
     if not m["n"]:
         return f"  {label:<24} （无数据）"
     edge, marg = m["edge_med"], m["marginal"]
+    if edge is None or marg is None:
+        # 样本太少时落点指标算不出来（中位数需要至少一条命中），
+        # 命中率仍然有效——只报命中率和耗时，不要拿 None 去做乘法。
+        lat = m["lat"] or 0.0
+        calls = m["calls"]
+        call_txt = f"{calls:>4.2f}" if calls is not None else "   -"
+        return (f"  {label:<24} 命中 {m['hit']:>3}/{m['n']:<3} = {m['rate']*100:>3.0f}%   "
+                f"ERROR {m['err']:<2} 单次 {lat:>4.1f}s  调用 {call_txt}   （落点指标样本不足）")
     ev = (edge - BASE_EDGE_MED) / BASE_EDGE_MED * 100 if edge is not None else 0
     mv = (marg - BASE_MARGINAL) / BASE_MARGINAL * 100 if marg is not None else 0
     out = (f"  {label:<24} 命中 {m['hit']:>3}/{m['n']:<3} = {m['rate']*100:>3.0f}%   ERROR {m['err']:<2} "
